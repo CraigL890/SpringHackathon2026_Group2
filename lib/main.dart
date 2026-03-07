@@ -7,9 +7,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // Firebase already initialized, ignore
+  }
   runApp(const SafeSpaceApp());
 }
 
@@ -22,9 +26,7 @@ class SafeSpaceApp extends StatelessWidget {
       title: 'SafeSpace',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF9C27B0),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF9C27B0)),
         useMaterial3: true,
       ),
       home: StreamBuilder<User?>(

@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,106 +17,210 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final user = FirebaseAuth.instance.currentUser;
   bool _sosSent = false;
+  int _currentIndex = 1; // Map tab selected by default
+
+  GoogleMapController? _mapController;
+  LatLng _currentPosition = const LatLng(52.6369, -1.1398); // Leicester default
+  String _currentStreet = 'Locating...';
+  StreamSubscription<Position>? _positionStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _initLocation();
+  }
+
+  @override
+  void dispose() {
+    _positionStream?.cancel();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initLocation() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.deniedForever) return;
+
+    Position pos = await Geolocator.getCurrentPosition();
+    _updatePosition(pos);
+
+    _positionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen(_updatePosition);
+  }
+
+  void _updatePosition(Position pos) async {
+    final latLng = LatLng(pos.latitude, pos.longitude);
+    setState(() => _currentPosition = latLng);
+    _mapController?.animateCamera(CameraUpdate.newLatLng(latLng));
+
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+      if (placemarks.isNotEmpty && mounted) {
+        final p = placemarks.first;
+        setState(() {
+          _currentStreet =
+              p.street ?? p.thoroughfare ?? p.name ?? 'Unknown Street';
+        });
+      }
+    } catch (_) {}
+  }
 
   void _sendSOS() async {
     setState(() => _sosSent = true);
-
-    // Log SOS alert to Firestore
     await FirebaseFirestore.instance.collection('sos_alerts').add({
       'user_id': user?.uid,
       'phone': user?.phoneNumber,
+      'location': GeoPoint(
+        _currentPosition.latitude,
+        _currentPosition.longitude,
+      ),
+      'street': _currentStreet,
       'timestamp': FieldValue.serverTimestamp(),
       'status': 'active',
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('🚨 SOS Alert Sent to your emergency contacts!'),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 4),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🚨 SOS Alert Sent!'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
 
-    // Reset after 10 seconds
     await Future.delayed(const Duration(seconds: 10));
     if (mounted) setState(() => _sosSent = false);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final qrData = 'safespace://user/${user?.uid}';
+  // Dark map style matching the screenshot
+  static const String _darkMapStyle = '''
+[
+  {"elementType": "geometry", "stylers": [{"color": "#242f3e"}]},
+  {"elementType": "labels.text.fill", "stylers": [{"color": "#746855"}]},
+  {"elementType": "labels.text.stroke", "stylers": [{"color": "#242f3e"}]},
+  {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#38414e"}]},
+  {"featureType": "road", "elementType": "geometry.stroke", "stylers": [{"color": "#212a37"}]},
+  {"featureType": "road", "elementType": "labels.text.fill", "stylers": [{"color": "#9ca5b3"}]},
+  {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#746855"}]},
+  {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#17263c"}]},
+  {"featureType": "water", "elementType": "labels.text.fill", "stylers": [{"color": "#515c6d"}]}
+]
+''';
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F0FF),
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.shield, color: Colors.white),
-            SizedBox(width: 8),
-            Text('SafeSpace', style: TextStyle(color: Colors.white)),
-          ],
+  Widget _buildMapTab() {
+    return Column(
+      children: [
+        // Street name bar
+        Container(
+          width: double.infinity,
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Text(
+            'Current Street (Live): $_currentStreet',
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
         ),
-        backgroundColor: const Color(0xFF9C27B0),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.contacts, color: Colors.white),
-            tooltip: 'Emergency Contacts',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Contacts feature coming soon!')),
-              );
+        // Map
+        Expanded(
+          child: GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: _currentPosition,
+              zoom: 17,
+            ),
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            mapToolbarEnabled: false,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              controller.setMapStyle(_darkMapStyle);
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () => FirebaseAuth.instance.signOut(),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            // Welcome card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF9C27B0),
-                borderRadius: BorderRadius.circular(16),
+        ),
+        // Buttons
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Scanning nearest contacts...'),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: const BorderSide(color: Colors.grey),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Scan Nearest',
+                    style: TextStyle(color: Colors.black87),
+                  ),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'You are safe 💜',
-                    style: TextStyle(
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _sosSent ? null : _sendSOS,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade700,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    _sosSent ? 'SENT!' : 'Emergency Scan',
+                    style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    user?.phoneNumber ?? 'Verified User',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-            // QR Code section
+  Widget _buildGenerateTab() {
+    final qrData = 'safespace://user/${user?.uid}';
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
             const Text(
               'Your Safety QR Code',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             const Text(
               'Share with trusted contacts only',
               style: TextStyle(color: Colors.grey),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -122,14 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   BoxShadow(
                     color: Colors.purple.withOpacity(0.15),
                     blurRadius: 15,
-                    spreadRadius: 2,
                   ),
                 ],
               ),
               child: QrImageView(
                 data: qrData,
                 version: QrVersions.auto,
-                size: 200.0,
+                size: 220,
                 eyeStyle: const QrEyeStyle(
                   eyeShape: QrEyeShape.square,
                   color: Color(0xFF9C27B0),
@@ -140,62 +247,102 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 32),
-
-            // SOS Button
-            const Text(
-              'Emergency SOS',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            GestureDetector(
-              onLongPress: _sosSent ? null : _sendSOS,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 160,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: _sosSent ? Colors.orange : Colors.red,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_sosSent ? Colors.orange : Colors.red)
-                          .withOpacity(0.4),
-                      blurRadius: 25,
-                      spreadRadius: 8,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _sosSent ? Icons.check_circle : Icons.warning_rounded,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _sosSent ? 'SENT!' : 'HOLD FOR\nSOS',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Hold button for 1 second to send emergency alert',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildHelpTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Help & Safety Tips',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          _helpCard(
+            Icons.sos,
+            'SOS Alert',
+            'Tap "Emergency Scan" to send your location to emergency contacts immediately.',
+          ),
+          _helpCard(
+            Icons.qr_code,
+            'QR Code',
+            'Your QR code links to your SafeSpace profile. Share it with trusted contacts.',
+          ),
+          _helpCard(
+            Icons.location_on,
+            'Live Location',
+            'Your location is tracked in real time so help can find you.',
+          ),
+          _helpCard(
+            Icons.phone,
+            'Emergency',
+            'Always call 999 in a life-threatening emergency.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _helpCard(IconData icon, String title, String body) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFF9C27B0), size: 32),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(body),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = [_buildGenerateTab(), _buildMapTab(), _buildHelpTab()];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F0FF),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        leading: IconButton(
+          icon: const CircleAvatar(
+            backgroundColor: Color(0xFFEDE7F6),
+            child: Icon(Icons.person, color: Color(0xFF9C27B0)),
+          ),
+          onPressed: () {},
+        ),
+        title: const Text(
+          'No vehicles nearby',
+          style: TextStyle(color: Colors.black87, fontSize: 16),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black54),
+            onPressed: () => FirebaseAuth.instance.signOut(),
+          ),
+        ],
+      ),
+      body: tabs[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (i) => setState(() => _currentIndex = i),
+        selectedItemColor: const Color(0xFF9C27B0),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'Generate'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'Help',
+          ),
+        ],
       ),
     );
   }
