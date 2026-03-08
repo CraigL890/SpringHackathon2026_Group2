@@ -59,11 +59,14 @@ class _LoginScreenState extends State<LoginScreen> {
         smsCode: _codeController.text,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
+      if (mounted) setState(() => _loading = false);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid code. Please try again.')),
-      );
-      setState(() => _loading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid code. Please try again.')),
+        );
+        setState(() => _loading = false);
+      }
     }
   }
 

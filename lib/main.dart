@@ -50,7 +50,11 @@ class SafeSpaceApp extends StatelessWidget {
             future: FirebaseFirestore.instance
                 .collection('businesses')
                 .doc(snapshot.data!.uid)
-                .get(),
+                .get()
+                .timeout(
+                  const Duration(seconds: 10),
+                  onTimeout: () => throw Exception('Firestore timeout'),
+                ),
             builder: (context, bizSnap) {
               if (bizSnap.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
@@ -61,10 +65,10 @@ class SafeSpaceApp extends StatelessWidget {
                 );
               }
               // If business record exists → business dashboard
-              if (bizSnap.hasData && bizSnap.data!.exists) {
+              if (!bizSnap.hasError && bizSnap.hasData && bizSnap.data!.exists) {
                 return const BusinessDashboardScreen();
               }
-              // Otherwise → user home
+              // Otherwise → user home (also handles errors/timeouts gracefully)
               return const HomeScreen();
             },
           );
