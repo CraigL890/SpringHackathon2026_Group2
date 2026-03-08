@@ -1,3 +1,10 @@
+## [2026-03-08] - Remove QR code generation tab
+
+- Removed the QR code tab from `HomeScreen` (`_buildGenerateTab`, bottom nav item, import)
+- Removed `qr_flutter` dependency from `pubspec.yaml`
+- Map tab is now the default (index 0)
+- Files affected: `lib/screens/home_screen.dart`, `pubspec.yaml`
+
 ## [2026-03-08] - Fix Google Maps TypeError on web
 
 - **Root cause**: `google_maps_flutter` on web requires the Google Maps JavaScript API to be loaded via a `<script>` tag in `web/index.html`. It was missing, causing `TypeError: Cannot read properties of undefined (reading 'maps')` (`google.maps` was undefined).
