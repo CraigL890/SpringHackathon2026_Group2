@@ -38,6 +38,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
   // Form fields
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
+  final _postcodeController = TextEditingController();
   final _phoneController = TextEditingController();
   final _descController = TextEditingController();
   String _selectedBusinessType = kBusinessTypes[0];
@@ -61,6 +62,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
       setState(() {
         _nameController.text = data['name'] ?? '';
         _addressController.text = data['address'] ?? '';
+        _postcodeController.text = data['postcode'] ?? '';
         _phoneController.text = data['phone'] ?? '';
         _descController.text = data['description'] ?? '';
         _selectedBusinessType = data['businessType'] ?? kBusinessTypes[0];
@@ -82,6 +84,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
         .update({
       'name': _nameController.text.trim(),
       'address': _addressController.text.trim(),
+      'postcode': _postcodeController.text.trim().toUpperCase(),
       'phone': _phoneController.text.trim(),
       'description': _descController.text.trim(),
       'businessType': _selectedBusinessType,
@@ -150,6 +153,16 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                 icon: Icons.location_on,
                 validator: (v) =>
                     v!.isEmpty ? 'Please enter your address' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Postcode
+              _buildField(
+                controller: _postcodeController,
+                label: 'Postcode',
+                icon: Icons.markunread_mailbox_outlined,
+                validator: (v) =>
+                    v!.isEmpty ? 'Please enter your postcode' : null,
               ),
               const SizedBox(height: 12),
 
