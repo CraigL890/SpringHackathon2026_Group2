@@ -25,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -47,7 +41,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBCboeVfLjbq4Ix6632DLz7gvAh0Vnu8GI',
+    apiKey: 'AIzaSyB6Dp0eZMhSQYow4KbW89GCH8jwwHiQQeU',
     appId: '1:555333699815:web:329211a857f94b2c583a42',
     messagingSenderId: '555333699815',
     projectId: 'safespace-c7f10',
@@ -57,7 +51,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA1o9xO9SwpE3EVtqAz8TFkp77Uq38jI6M',
+    apiKey: 'AIzaSyDWew_BpuMD9xUdgc_VnpNEc8H8xmhSkBQ',
     appId: '1:555333699815:android:a5c69127f0ec8357583a42',
     messagingSenderId: '555333699815',
     projectId: 'safespace-c7f10',
@@ -65,11 +59,31 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCeyMR-P-rIDgI35sx8rzcv6pezcKV_AII',
+    apiKey: 'AIzaSyBnhA22j-5bT72xIc_SAKb34cOsmWvbZKs',
     appId: '1:555333699815:ios:6cda561047aa3c76583a42',
     messagingSenderId: '555333699815',
     projectId: 'safespace-c7f10',
     storageBucket: 'safespace-c7f10.firebasestorage.app',
     iosBundleId: 'com.example.safespace',
   );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyBnhA22j-5bT72xIc_SAKb34cOsmWvbZKs',
+    appId: '1:555333699815:ios:6cda561047aa3c76583a42',
+    messagingSenderId: '555333699815',
+    projectId: 'safespace-c7f10',
+    storageBucket: 'safespace-c7f10.firebasestorage.app',
+    iosBundleId: 'com.example.safespace',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyB6Dp0eZMhSQYow4KbW89GCH8jwwHiQQeU',
+    appId: '1:555333699815:web:e8ad7e93d4d3ca75583a42',
+    messagingSenderId: '555333699815',
+    projectId: 'safespace-c7f10',
+    authDomain: 'safespace-c7f10.firebaseapp.com',
+    storageBucket: 'safespace-c7f10.firebasestorage.app',
+    measurementId: 'G-W406GNT9EY',
+  );
+
 }
