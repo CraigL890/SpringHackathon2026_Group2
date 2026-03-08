@@ -1,3 +1,9 @@
+## [2026-03-08] - Fix navigation not reaching HomeScreen after verification
+
+- **Root cause**: `LandingScreen` uses `Navigator.push` to open `LoginScreen`, putting it on top of the navigation stack. After sign-in, `main.dart`'s `StreamBuilder` rebuilt its `home` widget to `HomeScreen`, but `LoginScreen` remained on top of the stack — so the user never saw `HomeScreen`. The location permission dialog appeared because `HomeScreen` was instantiated at the bottom of the stack (its `initState` ran), but was hidden behind `LoginScreen`.
+- **Fix**: After successful `signInWithCredential`, call `Navigator.popUntil((route) => route.isFirst)` to clear back to the root route, which `StreamBuilder` has already updated to `HomeScreen`.
+- Files affected: `lib/screens/login_screen.dart`
+
 ## [2026-03-08] - Fix infinite loading after verification code submission
 
 - **Root cause 1**: After a successful `signInWithCredential` in `_verifyCode()`, `_loading` was never reset to `false`, leaving the spinner stuck. Also missing `mounted` guard on async callbacks.

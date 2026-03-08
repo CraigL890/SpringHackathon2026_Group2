@@ -59,7 +59,10 @@ class _LoginScreenState extends State<LoginScreen> {
         smsCode: _codeController.text,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
