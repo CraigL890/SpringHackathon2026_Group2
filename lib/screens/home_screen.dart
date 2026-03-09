@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'account_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -264,7 +265,12 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Color(0xFFEDE7F6),
             child: Icon(Icons.person, color: Color(0xFF9C27B0)),
           ),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AccountScreen()),
+            );
+          },
         ),
         title: const Text(
           'No vehicles nearby',
