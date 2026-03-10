@@ -39,10 +39,7 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'Log Out',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Log Out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -75,15 +72,17 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
             Container(
               width: double.infinity,
               color: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
               child: Column(
                 children: [
                   CircleAvatar(
                     radius: 42,
                     backgroundColor: const Color(0xFFE3F2FD),
-                    child: Icon(Icons.store,
-                        color: const Color(0xFF1565C0), size: 36),
+                    child: Icon(
+                      Icons.store,
+                      color: const Color(0xFF1565C0),
+                      size: 36,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -97,7 +96,9 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(20),
@@ -121,19 +122,16 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
             _settingsTile(
               icon: Icons.sos,
               title: 'Receive SOS Alerts',
-              subtitle:
-                  'Get notified when someone nearby sends an SOS signal',
+              subtitle: 'Get notified when someone nearby sends an SOS signal',
               value: _receiveSOSAlerts,
               onChanged: (v) => setState(() => _receiveSOSAlerts = v),
             ),
             _settingsTile(
               icon: Icons.campaign_outlined,
               title: 'Nearby Incident Alerts',
-              subtitle:
-                  'Be notified about safety incidents in your wider area',
+              subtitle: 'Be notified about safety incidents in your wider area',
               value: _notifyOnNearbyIncident,
-              onChanged: (v) =>
-                  setState(() => _notifyOnNearbyIncident = v),
+              onChanged: (v) => setState(() => _notifyOnNearbyIncident = v),
             ),
 
             const SizedBox(height: 20),
@@ -145,8 +143,7 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
               subtitle:
                   'Show your location to users looking for a safe space nearby',
               value: _listedAsActiveSafeSpace,
-              onChanged: (v) =>
-                  setState(() => _listedAsActiveSafeSpace = v),
+              onChanged: (v) => setState(() => _listedAsActiveSafeSpace = v),
             ),
             _settingsTile(
               icon: Icons.location_on_outlined,
@@ -154,8 +151,7 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
               subtitle:
                   'Allow SafeSpace users to see your exact location on their map',
               value: _shareLocationWithUsers,
-              onChanged: (v) =>
-                  setState(() => _shareLocationWithUsers = v),
+              onChanged: (v) => setState(() => _shareLocationWithUsers = v),
             ),
 
             const SizedBox(height: 20),
@@ -232,16 +228,14 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
         ],
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFE3F2FD),
           child: Icon(icon, color: const Color(0xFF1565C0), size: 20),
         ),
         title: Text(
           title,
-          style:
-              const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
         ),
         subtitle: Text(
           subtitle,
@@ -250,7 +244,7 @@ class _BusinessAccountScreenState extends State<BusinessAccountScreen> {
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF1565C0),
+          activeThumbColor: const Color(0xFF1565C0),
         ),
       ),
     );

@@ -14,7 +14,7 @@ class _AccountScreenState extends State<AccountScreen> {
   // Settings toggles
   bool _locationSharing = true;
   bool _sosNotifications = true;
-  bool _emergencyAlerts = true;
+  final bool _emergencyAlerts = true;
   bool _darkMapDefault = true;
 
   void _confirmLogout() {
@@ -40,10 +40,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'Log Out',
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text('Log Out', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -105,8 +102,10 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                   const SizedBox(height: 4),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEDE7F6),
                       borderRadius: BorderRadius.circular(20),
@@ -131,16 +130,10 @@ class _AccountScreenState extends State<AccountScreen> {
             _settingsTile(
               icon: Icons.location_on_outlined,
               title: 'Live Location Sharing with Contacts',
-              subtitle: 'Share your live location with trusted contacts when you send an SOS Alert',
+              subtitle:
+                  'Share your live location with trusted contacts when you send an SOS Alert',
               value: _locationSharing,
               onChanged: (v) => setState(() => _locationSharing = v),
-            ),
-            _settingsTile(
-              icon: Icons.location_on_outlined,
-              title: 'Live Location Sharing with Safespaces',
-              subtitle: 'Share your live location with nearby Safespaces when you send an SOS Alert',
-              value: _sosNotifications,
-              onChanged: (v) => setState(() => _sosNotifications = v),
             ),
 
             const SizedBox(height: 20),
@@ -229,8 +222,7 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFEDE7F6),
           child: Icon(icon, color: const Color(0xFF9C27B0), size: 20),
@@ -246,7 +238,7 @@ class _AccountScreenState extends State<AccountScreen> {
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: const Color(0xFF9C27B0),
+          activeThumbColor: const Color(0xFF9C27B0),
         ),
       ),
     );

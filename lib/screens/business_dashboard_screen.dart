@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geocoding/geocoding.dart';
 
 const List<String> kBusinessTypes = [
   'Police Station',
@@ -78,33 +79,60 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
 
-    await FirebaseFirestore.instance
-        .collection('businesses')
-        .doc(user?.uid)
-        .update({
-      'name': _nameController.text.trim(),
-      'address': _addressController.text.trim(),
-      'postcode': _postcodeController.text.trim().toUpperCase(),
-      'phone': _phoneController.text.trim(),
-      'description': _descController.text.trim(),
-      'businessType': _selectedBusinessType,
-      'safeSpaceType': _selectedSafeSpaceType,
-      'open24h': _isOpen24h,
-      'disabledAccess': _hasDisabledAccess,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    // Geocode the address to get coordinates
+    GeoPoint? geoPoint;
+    try {
+      final query =
+          '${_addressController.text.trim()}, ${_postcodeController.text.trim()}, UK';
+      final locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        geoPoint = GeoPoint(
+          locations.first.latitude,
+          locations.first.longitude,
+        );
+      }
+    } catch (_) {
+      // Geocoding failed — location won't appear on map until fixed
+    }
 
-    setState(() {
-      _loading = false;
-      _saved = true;
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('businesses')
+          .doc(user?.uid)
+          .set({
+            'name': _nameController.text.trim(),
+            'address': _addressController.text.trim(),
+            'postcode': _postcodeController.text.trim().toUpperCase(),
+            'phone': _phoneController.text.trim(),
+            'description': _descController.text.trim(),
+            'businessType': _selectedBusinessType,
+            'safeSpaceType': _selectedSafeSpaceType,
+            'open24h': _isOpen24h,
+            'disabledAccess': _hasDisabledAccess,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'uid': user?.uid,
+            'location': ?geoPoint, // ← coordinates for map
+          }, SetOptions(merge: true));
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✅ Listing saved! Awaiting verification.'),
-        backgroundColor: Colors.green,
-      ),
-    );
+      setState(() {
+        _loading = false;
+        _saved = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Listing saved! Awaiting verification.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -113,8 +141,10 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
       backgroundColor: const Color(0xFFF0F4FF),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A237E),
-        title: const Text('SafeSpace Business',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'SafeSpace Business',
+          style: TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -187,30 +217,36 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
               const SizedBox(height: 12),
 
               // Business type
-              const Text('Business Type',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600, color: Colors.black87)),
+              const Text(
+                'Business Type',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
               const SizedBox(height: 8),
               _buildDropdown(
                 value: _selectedBusinessType,
                 items: kBusinessTypes,
                 icon: Icons.category,
-                onChanged: (v) =>
-                    setState(() => _selectedBusinessType = v!),
+                onChanged: (v) => setState(() => _selectedBusinessType = v!),
               ),
               const SizedBox(height: 12),
 
               // Safe space type
-              const Text('Safe Space Type',
-                  style: TextStyle(
-                      fontWeight: FontWeight.w600, color: Colors.black87)),
+              const Text(
+                'Safe Space Type',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
               const SizedBox(height: 8),
               _buildDropdown(
                 value: _selectedSafeSpaceType,
                 items: kSafeSpaceTypes,
                 icon: Icons.shield,
-                onChanged: (v) =>
-                    setState(() => _selectedSafeSpaceType = v!),
+                onChanged: (v) => setState(() => _selectedSafeSpaceType = v!),
               ),
               const SizedBox(height: 20),
 
@@ -381,7 +417,9 @@ class _StatusBanner extends StatelessWidget {
                   saved ? 'Pending Verification' : 'Complete Your Profile',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: saved ? Colors.orange.shade800 : Colors.blue.shade800,
+                    color: saved
+                        ? Colors.orange.shade800
+                        : Colors.blue.shade800,
                   ),
                 ),
                 Text(
@@ -390,8 +428,9 @@ class _StatusBanner extends StatelessWidget {
                       : 'Fill in your details below to register as a Safe Space.',
                   style: TextStyle(
                     fontSize: 12,
-                    color:
-                        saved ? Colors.orange.shade700 : Colors.blue.shade700,
+                    color: saved
+                        ? Colors.orange.shade700
+                        : Colors.blue.shade700,
                   ),
                 ),
               ],
